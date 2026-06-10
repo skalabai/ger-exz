@@ -1,12 +1,26 @@
 """
 Задание 6. Алгоритм цифровой подписи DSA (Digital Signature Algorithm).
-Создание и проверка подписи для числового сообщения (хеша).
+
+DSA создаёт подпись из двух чисел (r, s):
+
+    Подписание (закрытый ключ x):
+        r = (g^k mod p) mod q
+        s = k^(-1) * (H + x*r) mod q
+
+    Проверка (открытый ключ y = g^x mod p):
+        w = s^(-1) mod q
+        u1 = H*w mod q,  u2 = r*w mod q
+        v = (g^u1 * y^u2 mod p) mod q
+        Подпись верна, если v == r
+
+Параметры: p, q — простые, q делит (p-1), g — образующий подгруппы порядка q.
 """
 
 import random
 
 
 def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
+    """Расширенный алгоритм Евклида."""
     if b == 0:
         return a, 1, 0
     gcd, x1, y1 = extended_gcd(b, a % b)
@@ -14,6 +28,7 @@ def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
 
 
 def mod_inverse(a: int, m: int) -> int:
+    """Обратный элемент по модулю m."""
     gcd, x, _ = extended_gcd(a % m, m)
     if gcd != 1:
         raise ValueError("Обратный элемент не существует")
@@ -21,6 +36,7 @@ def mod_inverse(a: int, m: int) -> int:
 
 
 def is_prime(n: int) -> bool:
+    """Проверка на простоту."""
     if n < 2:
         return False
     d = 2
@@ -32,6 +48,12 @@ def is_prime(n: int) -> bool:
 
 
 def generate_dsa_parameters() -> tuple[int, int, int]:
+    """
+    Генерирует параметры DSA: (p, q, g).
+
+    Ищем простые p и q такие что p = 2q + 1 (тогда q | (p-1)).
+    g вычисляется как g = h^((p-1)/q) mod p для h = 2, 3, ...
+    """
     q = 11
     while True:
         if not is_prime(q):
@@ -42,6 +64,7 @@ def generate_dsa_parameters() -> tuple[int, int, int]:
             break
         q += 2
 
+    # Ищем g порядка q (не равного 1)
     h = 2
     while True:
         g = pow(h, (p - 1) // q, p)
@@ -53,13 +76,25 @@ def generate_dsa_parameters() -> tuple[int, int, int]:
 
 
 def generate_dsa_keys(p: int, q: int, g: int, x: int | None = None) -> tuple[tuple[int, int, int, int], int]:
+    """
+    Генерирует ключи DSA.
+    x — закрытый ключ (случайное из [1, q-1])
+    y = g^x mod p — открытый ключ
+    """
     if x is None:
         x = random.randrange(1, q)
     y = pow(g, x, p)
-    return (p, q, g, y), x
+    public_key = (p, q, g, y)
+    return public_key, x
 
 
 def dsa_sign(message: int, private_key: int, public_key: tuple[int, int, int, int], k: int | None = None) -> tuple[int, int, int]:
+    """
+    Создаёт подпись (r, s) для хеша message.
+    k — одноразовое случайное число (критически важно для безопасности).
+ 
+    Возвращает (r, s, k) — k возвращаем для демонстрации вычислений.
+    """
     p, q, g, _ = public_key
     x = private_key
 
@@ -80,6 +115,10 @@ def dsa_sign(message: int, private_key: int, public_key: tuple[int, int, int, in
 
 
 def dsa_verify(message: int, signature: tuple[int, int], public_key: tuple[int, int, int, int]) -> tuple[bool, int]:
+    """
+    Проверяет подпись (r, s).
+    Возвращает (результат проверки, вычисленное v).
+    """
     p, q, g, y = public_key
     r, s = signature
 
@@ -113,7 +152,7 @@ if __name__ == "__main__":
     print("\n--- Создание подписи ---")
     r, s, k_used = dsa_sign(message_hash, private_key, public_key, k=custom_k)
     k_inv = mod_inverse(k_used, q)
-    print(f"k = {k_used}")
+    print(f"k = {k_used} (одноразовое случайное число)")
     print(f"r = (g^k mod p) mod q = ({g}^{k_used} mod {p}) mod {q} = {pow(g, k_used, p)} mod {q} = {r}")
     print(f"k^(-1) mod q = {k_inv}")
     print(f"s = k^(-1) * (H + x*r) mod q = {k_inv} * ({message_hash} + {private_key}*{r}) mod {q} = {s}")

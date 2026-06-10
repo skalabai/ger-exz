@@ -1,44 +1,102 @@
 """
-Задание 1. Шифр Цезаря.
-Сдвигаем каждую букву алфавита на фиксированное число позиций.
+Задание 1. Шифр Цезаря (русский алфавит).
+
+Идея шифра:
+    Каждая буква заменяется на букву, стоящую на k позиций дальше в алфавите.
+    Если выходим за конец алфавита — продолжаем с начала (операция mod).
+
+Пример:
+    При сдвиге 3 буква 'а' (позиция 0) становится 'г' (позиция 3).
+
+Расшифровка:
+    Это то же шифрование, но со сдвигом -k (или +30 при 33 буквах).
 """
+
+# Строчный русский алфавит из 33 букв (включая 'ё' после 'е')
+RU_LOWER = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+
+# Заглавный русский алфавит — тот же порядок букв
+RU_UPPER = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+
+# Размер алфавита нужен для операции mod при сдвиге
+ALPHABET_SIZE = len(RU_LOWER)  # 33
 
 
 def caesar_encrypt(text: str, shift: int, verbose: bool = False) -> str:
-    """Шифрует текст шифром Цезаря."""
-    result = []
-    shift = shift % 26
+    """
+    Шифрует текст шифром Цезаря для русского алфавита.
+
+    Параметры:
+        text   — исходный текст
+        shift  — величина сдвига (ключ шифрования)
+        verbose — если True, печатает каждый шаг вычисления
+
+    Возвращает:
+        Зашифрованную строку
+    """
+    result = []  # сюда собираем зашифрованные символы
+
+    # Нормализуем сдвиг: например, сдвиг 35 при алфавите 33 = сдвиг 2
+    shift = shift % ALPHABET_SIZE
 
     if verbose:
-        print(f"\nНормализованный сдвиг: {shift}")
+        print(f"\nРазмер алфавита: {ALPHABET_SIZE} букв")
+        print(f"Алфавит: {RU_LOWER}")
+        print(f"Нормализованный сдвиг: {shift}")
         print("Пошаговое шифрование:")
 
+    # Обрабатываем каждый символ текста по отдельности
     for char in text:
-        if char.isalpha():
-            base = ord('A') if char.isupper() else ord('a')
-            pos = ord(char) - base
-            new_pos = (pos + shift) % 26
-            encrypted_char = chr(new_pos + base)
+        if char in RU_UPPER:
+            # Заглавная русская буква: ищем позицию в RU_UPPER
+            pos = RU_UPPER.index(char)
+            # Новая позиция = (старая + сдвиг) mod 33
+            new_char = RU_UPPER[(pos + shift) % ALPHABET_SIZE]
             if verbose:
-                print(f"  '{char}' -> позиция {pos} + {shift} = {new_pos} mod 26 -> '{encrypted_char}'")
-            result.append(encrypted_char)
+                print(
+                    f"  '{char}' -> позиция {pos} + {shift} = "
+                    f"{(pos + shift) % ALPHABET_SIZE} mod {ALPHABET_SIZE} -> '{new_char}'"
+                )
+            result.append(new_char)
+
+        elif char in RU_LOWER:
+            # Строчная русская буква — аналогично, но в RU_LOWER
+            pos = RU_LOWER.index(char)
+            new_char = RU_LOWER[(pos + shift) % ALPHABET_SIZE]
+            if verbose:
+                print(
+                    f"  '{char}' -> позиция {pos} + {shift} = "
+                    f"{(pos + shift) % ALPHABET_SIZE} mod {ALPHABET_SIZE} -> '{new_char}'"
+                )
+            result.append(new_char)
+
         else:
+            # Пробелы, цифры, знаки препинания, латиница — не шифруем
             if verbose:
-                print(f"  '{char}' -> не буква, без изменений")
+                print(f"  '{char}' -> не русская буква, без изменений")
             result.append(char)
 
-    return ''.join(result)
+    # Склеиваем список символов в одну строку
+    return "".join(result)
 
 
 def caesar_decrypt(text: str, shift: int, verbose: bool = False) -> str:
-    """Расшифровка — сдвиг в обратную сторону."""
+    """
+    Расшифровывает текст шифром Цезаря.
+
+    Расшифровка = шифрование с обратным сдвигом (-shift).
+    Это работает потому что: (pos + k - k) mod 33 = pos.
+    """
     if verbose:
-        print(f"\nРасшифровка: сдвиг на {-shift % 26}")
+        print(f"\nРасшифровка: сдвиг на {-shift % ALPHABET_SIZE}")
     return caesar_encrypt(text, -shift, verbose=verbose)
 
 
+# Точка входа программы — запускается при вызове: python task01_caesar_cipher.py
 if __name__ == "__main__":
-    print("=== Шифр Цезаря ===")
+    print("=== Шифр Цезаря (русский алфавит) ===")
+
+    # Запрашиваем данные у пользователя через консоль
     text = input("Введите текст: ")
     shift = int(input("Введите ключ (сдвиг): "))
     action = input("Действие (1 — шифровать, 2 — расшифровать): ").strip()

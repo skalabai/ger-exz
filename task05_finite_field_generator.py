@@ -1,10 +1,23 @@
 """
-Задание 5. Поиск наименьшего образующего (примитивного корня)
-конечного поля GF(p), где p — простое число.
+Задание 5. Поиск наименьшего образующего (примитивного корня) поля GF(p).
+
+GF(p) — конечное поле из p элементов: {0, 1, 2, ..., p-1}, p — простое.
+
+Примитивный корень g:
+    Его степени g^1, g^2, ..., g^(p-1) mod p
+    дают ВСЕ ненулевые элементы поля (в каком-то порядке).
+
+Проверка:
+    g — примитивный корень, если для каждого простого делителя q числа (p-1):
+        g^((p-1)/q) != 1 (mod p)
 """
 
 
 def prime_factors(n: int) -> list[int]:
+    """
+    Разлагает число n на простые множители (без повторений).
+    Например: 12 -> [2, 3], 30 -> [2, 3, 5]
+    """
     factors = []
     d = 2
     while d * d <= n:
@@ -12,13 +25,21 @@ def prime_factors(n: int) -> list[int]:
             factors.append(d)
             while n % d == 0:
                 n //= d
-        d += 1 if d == 2 else 2
+        d += 1 if d == 2 else 2  # после 2 проверяем только нечётные
     if n > 1:
         factors.append(n)
     return factors
 
 
 def is_primitive_root(g: int, p: int, verbose: bool = False) -> bool:
+    """
+    Проверяет, является ли g примитивным корнем по модулю p.
+
+    Алгоритм:
+        1. Найти простые делители q числа phi(p) = p-1
+        2. Для каждого q проверить: g^((p-1)/q) mod p != 1
+        3. Если все проверки пройдены — g примитивный корень
+    """
     if g <= 1 or g >= p:
         return False
 
@@ -46,6 +67,10 @@ def is_primitive_root(g: int, p: int, verbose: bool = False) -> bool:
 
 
 def find_smallest_generator(p: int, verbose: bool = False) -> int:
+    """
+    Находит наименьший примитивный корень в GF(p).
+    Перебирает g = 2, 3, 4, ... пока не найдёт подходящий.
+    """
     if not is_prime_simple(p):
         raise ValueError("p должно быть простым числом")
 
@@ -60,6 +85,7 @@ def find_smallest_generator(p: int, verbose: bool = False) -> int:
 
 
 def is_prime_simple(n: int) -> bool:
+    """Простая проверка: делим n на все числа до sqrt(n)."""
     if n < 2:
         return False
     d = 2
@@ -82,6 +108,7 @@ if __name__ == "__main__":
         print(f"\n--- Результат ---")
         print(f"Наименьший образующий: g = {g}")
 
+        # Показываем все степени g — они должны покрыть все элементы 1..p-1
         print(f"\nСтепени g mod {p}:")
         powers = []
         for k in range(1, p):
