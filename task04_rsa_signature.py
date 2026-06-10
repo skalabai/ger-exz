@@ -5,8 +5,6 @@
     - Подпись создаётся ЗАКРЫТЫМ ключом:  s = h^d mod n
     - Проверяется ОТКРЫТЫМ ключом:       h' = s^e mod n
     - Если h' == h, подпись верна
-
-Здесь h — хеш документа (число). В реальности сначала считают SHA-256 и берут mod n.
 """
 
 
@@ -19,7 +17,6 @@ def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
 
 
 def mod_inverse(a: int, m: int) -> int:
-    """Вычисляет a^(-1) mod m."""
     gcd, x, _ = extended_gcd(a % m, m)
     if gcd != 1:
         raise ValueError("Обратный элемент не существует")
@@ -27,7 +24,6 @@ def mod_inverse(a: int, m: int) -> int:
 
 
 def is_prime(n: int) -> bool:
-    """Проверка числа на простоту."""
     if n < 2:
         return False
     if n < 4:
@@ -42,24 +38,48 @@ def is_prime(n: int) -> bool:
     return True
 
 
-def generate_rsa_keys_from_primes(p: int, q: int) -> tuple[tuple[int, int], tuple[int, int], dict]:
-    """Генерирует ключи RSA (та же логика, что в задании 3)."""
+def print_find_e(phi: int) -> int:
+    print(f"\n[Поиск e] Открытая экспонента e, где НОД(e, phi) = 1:")
+    e = 3
+    while True:
+        gcd, _, _ = extended_gcd(e, phi)
+        if gcd == 1:
+            print(f"  e = {e}: НОД({e}, {phi}) = {gcd} -> ПОДХОДИТ")
+            return e
+        print(f"  e = {e}: НОД({e}, {phi}) = {gcd} -> не подходит")
+        e += 2
+
+
+def print_find_d(e: int, phi: int) -> int:
+    print(f"\n[Поиск d] Закрытая экспонента d = e^(-1) mod phi:")
+    print(f"  Условие: {e} * d mod {phi} = 1")
+    gcd, x, _ = extended_gcd(e, phi)
+    d = x % phi
+    print(f"  Расширенный Евклид: d = {d}")
+    print(f"  Проверка: {e} * {d} mod {phi} = {e * d % phi}")
+    return d
+
+
+def generate_rsa_keys_verbose(p: int, q: int) -> tuple[tuple[int, int], tuple[int, int], dict]:
     if not is_prime(p) or not is_prime(q):
         raise ValueError("p и q должны быть простыми")
+
+    print(f"\n[Ввод] p = {p}, q = {q}")
+
+    print(f"\n[Поиск n] n = p * q = {p} * {q} = {p * q}")
     n = p * q
+
+    print(f"\n[Поиск phi] phi = (p-1)(q-1) = {p-1} * {q-1} = {(p-1)*(q-1)}")
     phi = (p - 1) * (q - 1)
-    e = 3
-    while extended_gcd(e, phi)[0] != 1:
-        e += 2
-    d = mod_inverse(e, phi)
+
+    e = print_find_e(phi)
+    d = print_find_d(e, phi)
+
+    print(f"\n[Ключи] Открытый (e,n)=({e},{n}), Закрытый (d,n)=({d},{n})")
     return (e, n), (d, n), {"p": p, "q": q, "n": n, "phi": phi, "e": e, "d": d}
 
 
 def rsa_sign(message: int, private_key: tuple[int, int]) -> int:
-    """
-    Создаёт цифровую подпись.
-    Формула: s = h^d mod n  (подписываем закрытым ключом)
-    """
     d, n = private_key
     if message >= n:
         raise ValueError("Хеш должен быть меньше модуля n")
@@ -67,11 +87,6 @@ def rsa_sign(message: int, private_key: tuple[int, int]) -> int:
 
 
 def rsa_verify(message: int, signature: int, public_key: tuple[int, int]) -> tuple[bool, int]:
-    """
-    Проверяет цифровую подпись.
-    Формула: h' = s^e mod n  (проверяем открытым ключом)
-    Возвращает (True/False, восстановленный хеш h').
-    """
     e, n = public_key
     recovered = pow(signature, e, n)
     return recovered == message, recovered
@@ -79,36 +94,37 @@ def rsa_verify(message: int, signature: int, public_key: tuple[int, int]) -> tup
 
 if __name__ == "__main__":
     print("=== ЭЦП на основе RSA ===")
-
     p = int(input("Введите простое число p: "))
     q = int(input("Введите простое число q: "))
-    document_hash = int(input("Введите хеш документа (число): "))
+    document_hash = int(input("Введите хеш документа (число h): "))
 
-    print("\n--- Генерация ключей ---")
-    public, private, info = generate_rsa_keys_from_primes(p, q)
-    print(f"n = {info['n']}, e = {info['e']}, d = {info['d']}")
+    print("\n========== ГЕНЕРАЦИЯ КЛЮЧЕЙ ==========")
+    public, private, info = generate_rsa_keys_verbose(p, q)
 
-    # Хеш должен быть меньше n — ограничение RSA
     if document_hash >= info['n']:
-        print(f"\nОшибка: хеш h = {document_hash} должен быть меньше n = {info['n']}")
-        print("Подсказка: введите хеш меньше n, например 10 при n=35")
+        print(f"\nОшибка: h = {document_hash} должен быть < n = {info['n']}")
         raise SystemExit(1)
 
-    print("\n--- Создание подписи ---")
-    print(f"Формула: s = h^d mod n = {document_hash}^{info['d']} mod {info['n']}")
+    print(f"\n[Ввод] h = {document_hash} — хеш документа (задан пользователем)")
+
+    print(f"\n========== СОЗДАНИЕ ПОДПИСИ ==========")
+    print(f"[Поиск s] Подпись (закрытым ключом d):")
+    print(f"  Формула: s = h^d mod n")
+    print(f"  s = {document_hash}^{info['d']} mod {info['n']}")
     signature = rsa_sign(document_hash, private)
-    print(f"Подпись s = {signature}")
+    print(f"  s = {signature}")
 
-    print("\n--- Проверка подписи (оригинальный хеш) ---")
-    print(f"Формула: h' = s^e mod n = {signature}^{info['e']} mod {info['n']}")
+    print(f"\n========== ПРОВЕРКА ПОДПИСИ ==========")
+    print(f"[Поиск h'] Восстановленный хеш (открытым ключом e):")
+    print(f"  Формула: h' = s^e mod n")
+    print(f"  h' = {signature}^{info['e']} mod {info['n']}")
     valid, recovered = rsa_verify(document_hash, signature, public)
-    print(f"Восстановленный хеш h' = {recovered}")
-    print(f"h' == h ({recovered} == {document_hash}): {valid}")
+    print(f"  h' = {recovered}")
+    print(f"[Сравнение] h' == h ?  {recovered} == {document_hash} -> {valid}")
 
-    # Демонстрация: при изменении хеша подпись не проходит проверку
     tampered = int(input("\nВведите изменённый хеш для проверки подделки: "))
-    print(f"\n--- Проверка подписи (изменённый хеш {tampered}) ---")
-    print(f"Формула: h' = s^e mod n = {signature}^{info['e']} mod {info['n']}")
+    print(f"\n[Проверка подделки] h_новый = {tampered}")
+    print(f"  h' = s^e mod n = {signature}^{info['e']} mod {info['n']}")
     tampered_valid, tampered_recovered = rsa_verify(tampered, signature, public)
-    print(f"Восстановленный хеш h' = {tampered_recovered}")
-    print(f"h' == {tampered}: {tampered_valid}")
+    print(f"  h' = {tampered_recovered} (не зависит от введённого h!)")
+    print(f"  h' == h_новый ?  {tampered_recovered} == {tampered} -> {tampered_valid}")

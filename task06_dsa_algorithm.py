@@ -47,29 +47,43 @@ def is_prime(n: int) -> bool:
     return True
 
 
-def generate_dsa_parameters() -> tuple[int, int, int]:
+def generate_dsa_parameters(verbose: bool = False) -> tuple[int, int, int]:
     """
     Генерирует параметры DSA: (p, q, g).
-
-    Ищем простые p и q такие что p = 2q + 1 (тогда q | (p-1)).
-    g вычисляется как g = h^((p-1)/q) mod p для h = 2, 3, ...
+    Ищем простые p и q: p = 2q + 1, затем g = h^((p-1)/q) mod p.
     """
+    if verbose:
+        print("[Поиск q] Простое q, для которого p = 2q+1 тоже простое:")
     q = 11
     while True:
         if not is_prime(q):
+            if verbose:
+                print(f"  q = {q} — не простое, q += 2")
             q += 2
             continue
         p = 2 * q + 1
         if is_prime(p):
+            if verbose:
+                print(f"  q = {q}: p = 2*{q}+1 = {p} — простое -> ПОДХОДИТ")
             break
+        if verbose:
+            print(f"  q = {q}: p = {p} — не простое, q += 2")
         q += 2
 
-    # Ищем g порядка q (не равного 1)
+    if verbose:
+        print(f"\n[Поиск g] Образующий подгруппы: g = h^((p-1)/q) mod p")
     h = 2
     while True:
-        g = pow(h, (p - 1) // q, p)
+        exp = (p - 1) // q
+        g = pow(h, exp, p)
+        if verbose:
+            print(f"  h = {h}: g = {h}^{exp} mod {p} = {g}", end="")
         if g > 1:
+            if verbose:
+                print(" -> g > 1, ПОДХОДИТ")
             break
+        if verbose:
+            print(" -> g = 1, пробуем h+1")
         h += 1
 
     return p, q, g
@@ -139,35 +153,44 @@ if __name__ == "__main__":
     use_custom_k = input("Задать k вручную? (y/n): ").strip().lower()
     custom_k = int(input("Введите k: ")) if use_custom_k == "y" else None
 
-    print("\n--- Генерация параметров ---")
-    p, q, g = generate_dsa_parameters()
-    print(f"p = {p} (простое)")
-    print(f"q = {q} (простое, q | (p-1))")
-    print(f"g = {g} (образующий подгруппы порядка q)")
+    print("\n========== ГЕНЕРАЦИЯ ПАРАМЕТРОВ ==========")
+    p, q, g = generate_dsa_parameters(verbose=True)
+    print(f"\n[Итог] p={p}, q={q}, g={g}")
 
+    print(f"\n[Поиск x] Закрытый ключ — случайное число из [1, q-1]:")
     public_key, private_key = generate_dsa_keys(p, q, g)
-    print(f"Закрытый ключ x = {private_key}")
-    print(f"Открытый ключ y = g^x mod p = {g}^{private_key} mod {p} = {public_key[3]}")
+    print(f"  x = {private_key}")
 
-    print("\n--- Создание подписи ---")
+    print(f"\n[Поиск y] Открытый ключ y = g^x mod p:")
+    print(f"  y = {g}^{private_key} mod {p} = {pow(g, private_key, p)}")
+
+    print(f"\n[Ввод] H = {message_hash} — хеш сообщения")
+
+    print("\n========== СОЗДАНИЕ ПОДПИСИ ==========")
     r, s, k_used = dsa_sign(message_hash, private_key, public_key, k=custom_k)
     k_inv = mod_inverse(k_used, q)
-    print(f"k = {k_used} (одноразовое случайное число)")
-    print(f"r = (g^k mod p) mod q = ({g}^{k_used} mod {p}) mod {q} = {pow(g, k_used, p)} mod {q} = {r}")
-    print(f"k^(-1) mod q = {k_inv}")
-    print(f"s = k^(-1) * (H + x*r) mod q = {k_inv} * ({message_hash} + {private_key}*{r}) mod {q} = {s}")
-    print(f"Подпись: (r, s) = ({r}, {s})")
+    gk_mod_p = pow(g, k_used, p)
+    print(f"[Поиск k] k = {k_used} (одноразовое случайное)")
+    print(f"[Поиск r] r = (g^k mod p) mod q = ({g}^{k_used} mod {p}) mod {q} = {gk_mod_p} mod {q} = {r}")
+    print(f"[Поиск k^(-1)] k^(-1) mod q = {k_inv}")
+    inner = (message_hash + private_key * r) % q
+    print(f"[Поиск s] s = k^(-1)*(H+x*r) mod q = {k_inv}*({message_hash}+{private_key}*{r}) mod {q}")
+    print(f"         = {k_inv} * {inner} mod {q} = {s}")
+    print(f"[Подпись] (r, s) = ({r}, {s})")
 
-    print("\n--- Проверка подписи ---")
+    print("\n========== ПРОВЕРКА ПОДПИСИ ==========")
     w = mod_inverse(s, q)
     u1 = (message_hash * w) % q
     u2 = (r * w) % q
-    print(f"w = s^(-1) mod q = {w}")
-    print(f"u1 = H*w mod q = {message_hash}*{w} mod {q} = {u1}")
-    print(f"u2 = r*w mod q = {r}*{w} mod {q} = {u2}")
-    print(f"v = (g^u1 * y^u2 mod p) mod q")
-    print(f"  g^u1 mod p = {g}^{u1} mod {p} = {pow(g, u1, p)}")
-    print(f"  y^u2 mod p = {public_key[3]}^{u2} mod {p} = {pow(public_key[3], u2, p)}")
+    gu1 = pow(g, u1, p)
+    yu2 = pow(public_key[3], u2, p)
+    print(f"[Поиск w]  w = s^(-1) mod q = {w}")
+    print(f"[Поиск u1] u1 = H*w mod q = {message_hash}*{w} mod {q} = {u1}")
+    print(f"[Поиск u2] u2 = r*w mod q = {r}*{w} mod {q} = {u2}")
+    print(f"[Поиск v]  v = (g^u1 * y^u2 mod p) mod q")
+    print(f"  g^u1 mod p = {g}^{u1} mod {p} = {gu1}")
+    print(f"  y^u2 mod p = {public_key[3]}^{u2} mod {p} = {yu2}")
+    print(f"  v = ({gu1} * {yu2} mod {p}) mod {q}")
     valid, v = dsa_verify(message_hash, (r, s), public_key)
     print(f"  v = {v}")
     print(f"v == r ({v} == {r}): {valid}")

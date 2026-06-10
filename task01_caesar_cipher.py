@@ -40,10 +40,12 @@ def caesar_encrypt(text: str, shift: int, verbose: bool = False) -> str:
     shift = shift % ALPHABET_SIZE
 
     if verbose:
-        print(f"\nРазмер алфавита: {ALPHABET_SIZE} букв")
-        print(f"Алфавит: {RU_LOWER}")
-        print(f"Нормализованный сдвиг: {shift}")
-        print("Пошаговое шифрование:")
+        print(f"\n[Переменные]")
+        print(f"  text  = '{text}'           — исходный текст (ввод пользователя)")
+        print(f"  shift = {shift} % {ALPHABET_SIZE} = {shift % ALPHABET_SIZE}  — нормализованный ключ")
+        print(f"  ALPHABET_SIZE = {ALPHABET_SIZE}  — длина русского алфавита")
+        print(f"  Алфавит: {RU_LOWER}")
+        print("\n[Поиск каждой буквы] pos -> (pos+shift) mod 33 -> новая буква:")
 
     # Обрабатываем каждый символ текста по отдельности
     for char in text:
@@ -53,10 +55,10 @@ def caesar_encrypt(text: str, shift: int, verbose: bool = False) -> str:
             # Новая позиция = (старая + сдвиг) mod 33
             new_char = RU_UPPER[(pos + shift) % ALPHABET_SIZE]
             if verbose:
-                print(
-                    f"  '{char}' -> позиция {pos} + {shift} = "
-                    f"{(pos + shift) % ALPHABET_SIZE} mod {ALPHABET_SIZE} -> '{new_char}'"
-                )
+                new_pos = (pos + shift) % ALPHABET_SIZE
+                print(f"  '{char}': ищем pos в алфавите -> pos={pos}")
+                print(f"         new_pos = (pos+shift) mod {ALPHABET_SIZE} = ({pos}+{shift}) mod {ALPHABET_SIZE} = {new_pos}")
+                print(f"         new_char = алфавит[{new_pos}] = '{new_char}'")
             result.append(new_char)
 
         elif char in RU_LOWER:
@@ -64,10 +66,10 @@ def caesar_encrypt(text: str, shift: int, verbose: bool = False) -> str:
             pos = RU_LOWER.index(char)
             new_char = RU_LOWER[(pos + shift) % ALPHABET_SIZE]
             if verbose:
-                print(
-                    f"  '{char}' -> позиция {pos} + {shift} = "
-                    f"{(pos + shift) % ALPHABET_SIZE} mod {ALPHABET_SIZE} -> '{new_char}'"
-                )
+                new_pos = (pos + shift) % ALPHABET_SIZE
+                print(f"  '{char}': ищем pos в алфавите -> pos={pos}")
+                print(f"         new_pos = (pos+shift) mod {ALPHABET_SIZE} = ({pos}+{shift}) mod {ALPHABET_SIZE} = {new_pos}")
+                print(f"         new_char = алфавит[{new_pos}] = '{new_char}'")
             result.append(new_char)
 
         else:

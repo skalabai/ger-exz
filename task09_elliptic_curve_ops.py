@@ -156,25 +156,36 @@ if __name__ == "__main__":
     p = int(input("Введите модуль p (простое): "))
 
     curve = EllipticCurve(a, b, p)
-    disc = (4 * pow(a, 3, p) + 27 * pow(b, 2, p)) % p
-    print(f"\nКривая: y^2 = x^3 + {a}x + {b} (mod {p})")
-    print(f"Дискриминант = 4a^3 + 27b^2 mod p = {disc}")
+    a3 = pow(a, 3, p)
+    b2 = pow(b, 2, p)
+    disc = (4 * a3 + 27 * b2) % p
+    print(f"\n[Параметры кривой] y^2 = x^3 + {a}x + {b} (mod {p})")
+    print(f"[Поиск дискриминанта] 4a^3 + 27b^2 mod p")
+    print(f"  4*{a}^3 mod {p} = 4*{a3} = {4*a3 % p}")
+    print(f"  27*{b}^2 mod {p} = 27*{b2} = {27*b2 % p}")
+    print(f"  дискриминант = {disc}")
 
     print("\n--- Точка P ---")
     x1 = int(input("x1: "))
     y1 = int(input("y1: "))
     P = (x1, y1)
+    x1c = pow(x1, 3, p)
     lhs = pow(y1, 2, p)
-    rhs = (pow(x1, 3, p) + a * x1 + b) % p
-    print(f"Проверка: y^2 mod p = {lhs}, x^3+ax+b mod p = {rhs} -> на кривой: {lhs == rhs}")
+    rhs = (x1c + a * x1 + b) % p
+    print(f"[Проверка P] y^2 mod p = {y1}^2 mod {p} = {lhs}")
+    print(f"             x^3+ax+b = {x1}^3+{a}*{x1}+{b} mod {p} = {rhs}")
+    print(f"             на кривой: {lhs == rhs}")
 
     print("\n--- Точка Q ---")
     x2 = int(input("x2: "))
     y2 = int(input("y2: "))
     Q = (x2, y2)
+    x2c = pow(x2, 3, p)
     lhs2 = pow(y2, 2, p)
-    rhs2 = (pow(x2, 3, p) + a * x2 + b) % p
-    print(f"Проверка: y^2 mod p = {lhs2}, x^3+ax+b mod p = {rhs2} -> на кривой: {lhs2 == rhs2}")
+    rhs2 = (x2c + a * x2 + b) % p
+    print(f"[Проверка Q] y^2 mod p = {y2}^2 mod {p} = {lhs2}")
+    print(f"             x^3+ax+b = {x2}^3+{a}*{x2}+{b} mod {p} = {rhs2}")
+    print(f"             на кривой: {lhs2 == rhs2}")
 
     print("\n--- Операции ---")
     curve.add_verbose(P, Q)

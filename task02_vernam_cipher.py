@@ -34,18 +34,26 @@ def vernam_encrypt(text: str, key: str, verbose: bool = False) -> str:
     result = []
 
     if verbose:
-        print("\nПошаговое XOR-шифрование:")
-        print(f"{'Символ':<8} {'Код':<6} {'Ключ':<8} {'Код':<6} {'XOR':<6} {'Результат'}")
+        print(f"\n[Переменные]")
+        print(f"  text = '{text}'  (длина {len(text)})")
+        print(f"  key  = '{key}'   (длина {len(key)})")
+        print("\n[Поиск шифротекста] для каждого символа: result = ord(text) XOR ord(key)")
+        print(f"{'№':<4} {'Символ':<8} {'ord':<6} {'Ключ':<8} {'ord':<6} {'XOR':<6} {'bin(XOR)':<12} {'Результат'}")
 
     # Проходим по парам (символ текста, символ ключа)
-    for t_char, k_char in zip(text, key):
+    for i, (t_char, k_char) in enumerate(zip(text, key), 1):
         t_code = ord(t_char)       # числовой код символа текста (Unicode)
         k_code = ord(k_char)       # числовой код символа ключа
         encrypted_byte = t_code ^ k_code  # побитовое XOR
         enc_char = chr(encrypted_byte)    # обратно в символ
 
         if verbose:
-            print(f"'{t_char}'     {t_code:<6} '{k_char}'     {k_code:<6} {encrypted_byte:<6} '{enc_char}'")
+            print(
+                f"{i:<4} '{t_char}'     {t_code:<6} '{k_char}'     {k_code:<6} "
+                f"{encrypted_byte:<6} {bin(encrypted_byte):<12} '{enc_char}'"
+            )
+            print(f"     {t_code} XOR {k_code} = {encrypted_byte}  "
+                  f"({bin(t_code)} XOR {bin(k_code)})")
 
         result.append(enc_char)
 

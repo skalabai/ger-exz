@@ -65,11 +65,13 @@ if __name__ == "__main__":
     n = int(input("Введите составное число n: "))
     bound = int(input("Введите верхнюю границу B (например, 20): "))
 
-    print(f"\nИщем делитель числа n = {n}")
+    print(f"\n[Ввод] n = {n}, B = {bound}")
+    print(f"Ищем делитель числа n = {n}")
     factor = pollard_p_minus_1_verbose(n, bound)
 
     if factor:
         other = n // factor
+        print(f"\n[Поиск второго делителя] n / {factor} = {n} / {factor} = {other}")
         print(f"\n--- Результат ---")
         print(f"{n} = {factor} * {other}")
         print(f"Проверка: {factor} * {other} = {factor * other}")

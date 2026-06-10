@@ -38,13 +38,15 @@ def miller_rabin_verbose(n: int, k: int = 10) -> bool:
         return False
 
     # Представляем n-1 = d * 2^r, где d нечётное
+    print(f"\n[Поиск d и r] Разложение n-1 = d * 2^r (d — нечётное):")
     d = n - 1
     r = 0
+    print(f"  Начало: d = n-1 = {n}-1 = {d}")
     while d % 2 == 0:
+        print(f"  d = {d} чётное -> d = {d}//2 = {d // 2}, r = {r}+1 = {r + 1}")
         d //= 2
         r += 1
-
-    print(f"\nn - 1 = {n - 1} = {d} * 2^{r}  (d = {d}, r = {r})")
+    print(f"  Итог: d = {d}, r = {r}  =>  n-1 = {d} * 2^{r} = {d * (2**r)}")
     print(f"Число раундов: {k}\n")
 
     # k независимых проверок
@@ -99,7 +101,8 @@ if __name__ == "__main__":
     n = int(input("Введите число n для проверки: "))
     k = int(input("Введите число раундов k (например, 5): "))
 
-    print(f"\nПроверяем число n = {n}")
+    print(f"\n[Ввод] n = {n}, k = {k} раундов")
+    print(f"Проверяем число n = {n}")
     mr_result = miller_rabin_verbose(n, k)
 
     # Сравниваем с точным ответом

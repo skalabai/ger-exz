@@ -51,10 +51,7 @@ class EllipticCurve:
         return x3, y3
 
     def scalar_mult(self, k: int, point):
-        """
-        Умножение точки на число k (k раз сложить точку с собой).
-        Метод двоичного разложения — быстрый алгоритм.
-        """
+        """Умножение точки на число k (метод двоичного разложения)."""
         result = None
         addend = point
         while k > 0:
@@ -62,6 +59,28 @@ class EllipticCurve:
                 result = self.add(result, addend)
             addend = self.double(addend)
             k >>= 1
+        return result
+
+    def scalar_mult_verbose(self, label: str, k: int, point):
+        """Умножение k*P с выводом, как находим результат."""
+        print(f"\n[Поиск {label}] {label} = {k} * {point}")
+        print(f"  k = {k} = {bin(k)} (двоичное разложение)")
+        result = None
+        addend = point
+        step = 0
+        k_orig = k
+        while k > 0:
+            step += 1
+            if k & 1:
+                print(f"  шаг {step}: бит 1 -> прибавляем {addend}")
+                result = self.add(result, addend) if result else addend
+                print(f"           промежуточный результат = {result}")
+            else:
+                print(f"  шаг {step}: бит 0 -> пропуск")
+            addend = self.double(addend)
+            print(f"           удваиваем: {addend}")
+            k >>= 1
+        print(f"  {label} = {result}")
         return result
 
 
@@ -98,21 +117,21 @@ if __name__ == "__main__":
     alice_private = int(input("\nСекретный ключ Алисы (a): "))
     bob_private = int(input("Секретный ключ Боба (b): "))
 
-    print("\n--- Шаг 1: публичные ключи (передаются по открытому каналу) ---")
-    public_a = curve.scalar_mult(alice_private, G)  # A = a*G
-    public_b = curve.scalar_mult(bob_private, G)    # B = b*G
-    print(f"A = a*G = {alice_private}*{G} = {public_a}")
-    print(f"B = b*G = {bob_private}*{G} = {public_b}")
+    print(f"\n[Ввод] a = {alice_private} (секрет Алисы), b = {bob_private} (секрет Боба)")
 
-    print("\n--- Шаг 2: вычисление общего секрета ---")
-    secret_alice = curve.scalar_mult(alice_private, public_b)  # S = a*B
-    secret_bob = curve.scalar_mult(bob_private, public_a)      # S = b*A
-    print(f"Алиса: S = a*B = {alice_private}*{public_b} = {secret_alice}")
-    print(f"Боб:   S = b*A = {bob_private}*{public_a} = {secret_bob}")
+    print("\n========== ШАГ 1: ПУБЛИЧНЫЕ КЛЮЧИ ==========")
+    public_a = curve.scalar_mult_verbose("A", alice_private, G)
+    public_b = curve.scalar_mult_verbose("B", bob_private, G)
 
-    # Извлекаем ключ из x-координаты общей точки
+    print("\n========== ШАГ 2: ОБЩИЙ СЕКРЕТ ==========")
+    secret_alice = curve.scalar_mult_verbose("S (у Алисы)", alice_private, public_b)
+    secret_bob = curve.scalar_mult_verbose("S (у Боба)", bob_private, public_a)
+
+    print(f"\n[Поиск ключа] Берём x-координату общей точки S:")
     key_alice = derive_shared_secret(secret_alice)
     key_bob = derive_shared_secret(secret_bob)
+    print(f"  key_Алисы = S.x = {key_alice}")
+    print(f"  key_Боба  = S.x = {key_bob}")
     print(f"\n--- Результат ---")
     print(f"Общий секрет Алисы (x-координата): {key_alice}")
     print(f"Общий секрет Боба (x-координата):  {key_bob}")

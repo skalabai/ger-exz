@@ -16,8 +16,8 @@ RSA — асимметричный алгоритм шифрования:
 def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
     """
     Расширенный алгоритм Евклида.
-    Находит НОД(a, b) и коэффициенты x, y такие что: a*x + b*y = НОД(a, b).
-    Нужен для вычисления обратного элемента d = e^(-1) mod phi(n).
+    Находит НОД(a, b) и коэффициенты x, y: a*x + b*y = НОД(a, b).
+    Используется для вычисления d = e^(-1) mod phi.
     """
     if b == 0:
         return a, 1, 0
@@ -28,10 +28,7 @@ def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
 
 
 def mod_inverse(a: int, m: int) -> int:
-    """
-    Находит обратный элемент a^(-1) mod m.
-    Существует только если НОД(a, m) = 1.
-    """
+    """Находит обратный элемент a^(-1) mod m."""
     gcd, x, _ = extended_gcd(a % m, m)
     if gcd != 1:
         raise ValueError("Обратный элемент не существует")
@@ -39,7 +36,7 @@ def mod_inverse(a: int, m: int) -> int:
 
 
 def is_prime(n: int) -> bool:
-    """Проверяет, является ли число простым (перебор делителей до sqrt(n))."""
+    """Проверяет, является ли число простым."""
     if n < 2:
         return False
     if n < 4:
@@ -54,41 +51,66 @@ def is_prime(n: int) -> bool:
     return True
 
 
-def generate_rsa_keys_from_primes(p: int, q: int) -> tuple[tuple[int, int], tuple[int, int], dict]:
-    """
-    Генерирует пару ключей RSA из двух простых чисел p и q.
+def print_find_e(phi: int) -> int:
+    """Ищет и выводит в консоль, как находим открытую экспоненту e."""
+    print(f"\n[Поиск e] Открытая экспонента: число e, где НОД(e, phi) = 1")
+    print(f"  phi = {phi}")
+    e = 3
+    while True:
+        gcd, _, _ = extended_gcd(e, phi)
+        if gcd == 1:
+            print(f"  Пробуем e = {e}: НОД({e}, {phi}) = {gcd} -> ПОДХОДИТ")
+            return e
+        print(f"  Пробуем e = {e}: НОД({e}, {phi}) = {gcd} -> не подходит, e += 2")
+        e += 2
 
-    Шаги:
-        1. n = p * q           — модуль
-        2. phi = (p-1)(q-1)    — функция Эйлера
-        3. e — открытая экспонента (НОД(e, phi) = 1)
-        4. d = e^(-1) mod phi  — закрытая экспонента
-    """
+
+def print_find_d(e: int, phi: int) -> int:
+    """Ищет и выводит в консоль, как находим закрытую экспоненту d."""
+    print(f"\n[Поиск d] Закрытая экспонента: d = e^(-1) mod phi")
+    print(f"  Нужно найти d такое, что: e * d mod phi = 1")
+    print(f"  То есть: {e} * d mod {phi} = 1")
+    gcd, x, y = extended_gcd(e, phi)
+    print(f"  Расширенный алгоритм Евклида для ({e}, {phi}):")
+    print(f"    НОД = {gcd}, коэффициент x = {x}")
+    d = x % phi
+    print(f"  d = x mod phi = {x} mod {phi} = {d}")
+    print(f"  Проверка: {e} * {d} mod {phi} = {e * d % phi}")
+    return d
+
+
+def generate_rsa_keys_verbose(p: int, q: int) -> tuple[tuple[int, int], tuple[int, int], dict]:
+    """Генерирует ключи RSA с подробным выводом поиска каждой переменной."""
     if not is_prime(p) or not is_prime(q):
         raise ValueError("p и q должны быть простыми")
     if p == q:
         raise ValueError("p и q должны быть различными")
 
-    n = p * q                    # модуль RSA
-    phi = (p - 1) * (q - 1)     # функция Эйлера: сколько чисел взаимно просто с n
+    print(f"\n[Ввод] p = {p} (простое), q = {q} (простое) — заданы пользователем")
 
-    # Ищем e: начинаем с 3, берём нечётные, пока НОД(e, phi) != 1
-    e = 3
-    while extended_gcd(e, phi)[0] != 1:
-        e += 2
+    print(f"\n[Поиск n] Модуль RSA:")
+    print(f"  Формула: n = p * q")
+    n = p * q
+    print(f"  n = {p} * {q} = {n}")
 
-    # d — число, что e*d ≡ 1 (mod phi)
-    d = mod_inverse(e, phi)
+    print(f"\n[Поиск phi] Функция Эйлера:")
+    print(f"  Формула: phi(n) = (p - 1) * (q - 1)")
+    phi = (p - 1) * (q - 1)
+    print(f"  phi = ({p}-1) * ({q}-1) = {p - 1} * {q - 1} = {phi}")
+
+    e = print_find_e(phi)
+    d = print_find_d(e, phi)
+
+    print(f"\n[Итог ключей]")
+    print(f"  Открытый ключ  (e, n) = ({e}, {n})")
+    print(f"  Закрытый ключ (d, n) = ({d}, {n})")
 
     info = {"p": p, "q": q, "n": n, "phi": phi, "e": e, "d": d}
     return (e, n), (d, n), info
 
 
 def rsa_encrypt(message: int, public_key: tuple[int, int]) -> int:
-    """
-    Шифрует сообщение открытым ключом.
-    Формула: c = m^e mod n
-    """
+    """Шифрует: c = m^e mod n"""
     e, n = public_key
     if message >= n:
         raise ValueError("Сообщение должно быть меньше модуля n")
@@ -96,45 +118,34 @@ def rsa_encrypt(message: int, public_key: tuple[int, int]) -> int:
 
 
 def rsa_decrypt(ciphertext: int, private_key: tuple[int, int]) -> int:
-    """
-    Расшифровывает шифротекст закрытым ключом.
-    Формула: m = c^d mod n
-    """
+    """Расшифровывает: m = c^d mod n"""
     d, n = private_key
     return pow(ciphertext, d, n)
 
 
 if __name__ == "__main__":
     print("=== Алгоритм RSA ===")
-
-    # Пользователь вводит простые числа и сообщение
     p = int(input("Введите простое число p: "))
     q = int(input("Введите простое число q: "))
     message = int(input("Введите сообщение (число m): "))
 
-    print("\n--- Генерация ключей ---")
-    public, private, info = generate_rsa_keys_from_primes(p, q)
+    print("\n========== ГЕНЕРАЦИЯ КЛЮЧЕЙ ==========")
+    public, private, info = generate_rsa_keys_verbose(p, q)
 
-    # Подробный вывод всех промежуточных значений
-    print(f"p = {info['p']}, q = {info['q']}")
-    print(f"n = p * q = {info['p']} * {info['q']} = {info['n']}")
-    print(f"phi(n) = (p-1)(q-1) = {p - 1} * {q - 1} = {info['phi']}")
-    print(f"Открытая экспонента e = {info['e']}  (НОД(e, phi) = 1)")
-    print(f"Закрытая экспонента d = {info['d']}  (e*d mod phi = {info['e'] * info['d'] % info['phi']})")
-    print(f"Открытый ключ:  (e, n) = {public}")
-    print(f"Закрытый ключ: (d, n) = {private}")
-
-    # RSA работает только когда m < n
     if message >= info['n']:
-        print(f"\nОшибка: сообщение m = {message} должно быть меньше n = {info['n']}")
+        print(f"\nОшибка: m = {message} должно быть < n = {info['n']}")
         raise SystemExit(1)
 
-    print("\n--- Шифрование ---")
-    print(f"Формула: c = m^e mod n = {message}^{info['e']} mod {info['n']}")
+    print(f"\n========== ШИФРОВАНИЕ ==========")
+    print(f"[Поиск c] Шифротекст:")
+    print(f"  Формула: c = m^e mod n")
+    print(f"  c = {message}^{info['e']} mod {info['n']}")
     encrypted = rsa_encrypt(message, public)
-    print(f"Шифротекст c = {encrypted}")
+    print(f"  c = {encrypted}")
 
-    print("\n--- Расшифрование ---")
-    print(f"Формула: m = c^d mod n = {encrypted}^{info['d']} mod {info['n']}")
+    print(f"\n========== РАСШИФРОВАНИЕ ==========")
+    print(f"[Поиск m] Расшифрованное сообщение:")
+    print(f"  Формула: m = c^d mod n")
+    print(f"  m = {encrypted}^{info['d']} mod {info['n']}")
     decrypted = rsa_decrypt(encrypted, private)
-    print(f"Расшифрованное сообщение m = {decrypted}")
+    print(f"  m = {decrypted}")

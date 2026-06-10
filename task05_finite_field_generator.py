@@ -13,21 +13,30 @@ GF(p) — конечное поле из p элементов: {0, 1, 2, ..., p-
 """
 
 
-def prime_factors(n: int) -> list[int]:
+def prime_factors(n: int, verbose: bool = False) -> list[int]:
     """
     Разлагает число n на простые множители (без повторений).
     Например: 12 -> [2, 3], 30 -> [2, 3, 5]
     """
+    original = n
     factors = []
+    if verbose:
+        print(f"  [Поиск делителей phi={original}]:")
     d = 2
     while d * d <= n:
         if n % d == 0:
+            if verbose:
+                print(f"    {n} делится на {d} -> добавляем множитель {d}")
             factors.append(d)
             while n % d == 0:
                 n //= d
-        d += 1 if d == 2 else 2  # после 2 проверяем только нечётные
+        d += 1 if d == 2 else 2
     if n > 1:
+        if verbose:
+            print(f"    остаток {n} — простой -> добавляем {n}")
         factors.append(n)
+    if verbose:
+        print(f"  Простые делители phi: {factors}")
     return factors
 
 
@@ -44,10 +53,12 @@ def is_primitive_root(g: int, p: int, verbose: bool = False) -> bool:
         return False
 
     phi = p - 1
-    factors = prime_factors(phi)
+    if verbose:
+        print(f"  [Поиск phi] phi(p) = p - 1 = {p} - 1 = {phi}")
+    factors = prime_factors(phi, verbose=verbose)
 
     if verbose:
-        print(f"  Проверка g = {g}: phi(p) = {phi}, простые делители phi: {factors}")
+        print(f"  [Проверка g = {g}] перебор условий примитивного корня:")
 
     for q in factors:
         exp = phi // q
@@ -103,6 +114,8 @@ if __name__ == "__main__":
     if not is_prime_simple(p):
         print(f"Ошибка: {p} не является простым числом")
     else:
+        print(f"\n[Ввод] p = {p} — модуль поля GF(p)")
+        print(f"[Поиск g] Перебираем g = 2, 3, ... пока g — примитивный корень")
         g = find_smallest_generator(p, verbose=True)
 
         print(f"\n--- Результат ---")
