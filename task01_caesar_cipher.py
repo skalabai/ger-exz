@@ -4,43 +4,50 @@
 """
 
 
-def caesar_encrypt(text: str, shift: int) -> str:
-    """
-    Шифрует текст шифром Цезаря.
-    shift — величина сдвига (ключ).
-    """
+def caesar_encrypt(text: str, shift: int, verbose: bool = False) -> str:
+    """Шифрует текст шифром Цезаря."""
     result = []
-    # Нормализуем сдвиг в диапазон 0..25
     shift = shift % 26
+
+    if verbose:
+        print(f"\nНормализованный сдвиг: {shift}")
+        print("Пошаговое шифрование:")
 
     for char in text:
         if char.isalpha():
-            # Определяем базу: 'A' для заглавных, 'a' для строчных
             base = ord('A') if char.isupper() else ord('a')
-            # Переводим букву в номер 0..25, сдвигаем и обратно в символ
-            encrypted_char = chr((ord(char) - base + shift) % 26 + base)
+            pos = ord(char) - base
+            new_pos = (pos + shift) % 26
+            encrypted_char = chr(new_pos + base)
+            if verbose:
+                print(f"  '{char}' -> позиция {pos} + {shift} = {new_pos} mod 26 -> '{encrypted_char}'")
             result.append(encrypted_char)
         else:
-            # Пробелы, цифры и знаки препинания не меняем
+            if verbose:
+                print(f"  '{char}' -> не буква, без изменений")
             result.append(char)
 
     return ''.join(result)
 
 
-def caesar_decrypt(text: str, shift: int) -> str:
-    """
-    Расшифровка — это шифрование со сдвигом в обратную сторону.
-    """
-    return caesar_encrypt(text, -shift)
+def caesar_decrypt(text: str, shift: int, verbose: bool = False) -> str:
+    """Расшифровка — сдвиг в обратную сторону."""
+    if verbose:
+        print(f"\nРасшифровка: сдвиг на {-shift % 26}")
+    return caesar_encrypt(text, -shift, verbose=verbose)
 
 
 if __name__ == "__main__":
-    message = "Hello, World!"
-    key = 3
+    print("=== Шифр Цезаря ===")
+    text = input("Введите текст: ")
+    shift = int(input("Введите ключ (сдвиг): "))
+    action = input("Действие (1 — шифровать, 2 — расшифровать): ").strip()
 
-    encrypted = caesar_encrypt(message, key)
-    decrypted = caesar_decrypt(encrypted, key)
-
-    print("Исходный текст:", message)
-    print("Зашифрованный:", encrypted)
-    print("Расшифрованный:", decrypted)
+    if action == "1":
+        print("\n--- ШИФРОВАНИЕ ---")
+        result = caesar_encrypt(text, shift, verbose=True)
+        print(f"\nИтоговый шифротекст: {result}")
+    else:
+        print("\n--- РАСШИФРОВАНИЕ ---")
+        result = caesar_decrypt(text, shift, verbose=True)
+        print(f"\nИтоговый текст: {result}")

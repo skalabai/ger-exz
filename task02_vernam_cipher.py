@@ -1,44 +1,52 @@
 """
 Задание 2. Шифр Вернама (одноразовый блокнот, XOR).
-Каждый символ текста складывается по модулю 2 (XOR) с символом ключа.
-Ключ должен быть случайным и той же длины, что и сообщение.
+Каждый символ текста XOR-ится с символом ключа.
 """
 
 
-def vernam_encrypt(text: str, key: str) -> str:
-    """
-    Шифрует текст методом Вернама.
-    text и key должны быть одинаковой длины.
-    """
+def vernam_encrypt(text: str, key: str, verbose: bool = False) -> str:
+    """Шифрует текст методом Вернама."""
     if len(text) != len(key):
         raise ValueError("Длина ключа должна совпадать с длиной сообщения")
 
     result = []
+    if verbose:
+        print("\nПошаговое XOR-шифрование:")
+        print(f"{'Символ':<8} {'Код':<6} {'Ключ':<8} {'Код':<6} {'XOR':<6} {'Результат'}")
+
     for t_char, k_char in zip(text, key):
-        # XOR кодов символов даёт зашифрованный байт/символ
-        encrypted_byte = ord(t_char) ^ ord(k_char)
-        result.append(chr(encrypted_byte))
+        t_code = ord(t_char)
+        k_code = ord(k_char)
+        encrypted_byte = t_code ^ k_code
+        enc_char = chr(encrypted_byte)
+        if verbose:
+            print(f"'{t_char}'     {t_code:<6} '{k_char}'     {k_code:<6} {encrypted_byte:<6} '{enc_char}'")
+        result.append(enc_char)
 
     return ''.join(result)
 
 
-def vernam_decrypt(ciphertext: str, key: str) -> str:
-    """
-    Расшифровка идентична шифрованию: повторный XOR с тем же ключом
-  возвращает исходный текст.
-    """
-    return vernam_encrypt(ciphertext, key)
+def vernam_decrypt(ciphertext: str, key: str, verbose: bool = False) -> str:
+    """Расшифровка — повторный XOR с тем же ключом."""
+    if verbose:
+        print("\nРасшифровка (повторный XOR):")
+    return vernam_encrypt(ciphertext, key, verbose=verbose)
 
 
 if __name__ == "__main__":
-    message = "SECRET"
-    # В реальности ключ генерируют криптографически стойким ГПСЧ
-    key = "Xk9#mQ"
+    print("=== Шифр Вернама ===")
+    text = input("Введите текст: ")
+    key = input("Введите ключ (той же длины): ")
+    action = input("Действие (1 — шифровать, 2 — расшифровать): ").strip()
 
-    encrypted = vernam_encrypt(message, key)
-    decrypted = vernam_decrypt(encrypted, key)
-
-    print("Исходный текст:", message)
-    print("Ключ:", key)
-    print("Зашифрованный (коды):", [ord(c) for c in encrypted])
-    print("Расшифрованный:", decrypted)
+    if len(text) != len(key):
+        print(f"Ошибка: длина текста ({len(text)}) != длина ключа ({len(key)})")
+    elif action == "1":
+        print("\n--- ШИФРОВАНИЕ ---")
+        result = vernam_encrypt(text, key, verbose=True)
+        print(f"\nШифротекст (символы): {result}")
+        print(f"Шифротекст (коды):    {[ord(c) for c in result]}")
+    else:
+        print("\n--- РАСШИФРОВАНИЕ ---")
+        result = vernam_decrypt(text, key, verbose=True)
+        print(f"\nРасшифрованный текст: {result}")

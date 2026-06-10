@@ -33,60 +33,59 @@ def is_prime(n: int) -> bool:
     return True
 
 
-def generate_prime(bits: int) -> int:
-    import random
-    while True:
-        candidate = random.getrandbits(bits) | (1 << (bits - 1)) | 1
-        if is_prime(candidate):
-            return candidate
-
-
-def generate_rsa_keys(bits: int = 16) -> tuple[tuple[int, int], tuple[int, int]]:
-    p = generate_prime(bits // 2)
-    q = generate_prime(bits // 2)
-    while p == q:
-        q = generate_prime(bits // 2)
+def generate_rsa_keys_from_primes(p: int, q: int) -> tuple[tuple[int, int], tuple[int, int], dict]:
+    if not is_prime(p) or not is_prime(q):
+        raise ValueError("p и q должны быть простыми")
     n = p * q
     phi = (p - 1) * (q - 1)
     e = 3
     while extended_gcd(e, phi)[0] != 1:
         e += 2
     d = mod_inverse(e, phi)
-    return (e, n), (d, n)
+    return (e, n), (d, n), {"p": p, "q": q, "n": n, "phi": phi, "e": e, "d": d}
 
 
 def rsa_sign(message: int, private_key: tuple[int, int]) -> int:
-    """
-    Создание подписи: s = m^d mod n.
-    Здесь message — числовой хеш документа (в реальности — хеш SHA и т.д.).
-    """
     d, n = private_key
     if message >= n:
         raise ValueError("Хеш должен быть меньше модуля n")
     return pow(message, d, n)
 
 
-def rsa_verify(message: int, signature: int, public_key: tuple[int, int]) -> bool:
-    """
-    Проверка подписи: вычисляем m' = s^e mod n и сравниваем с message.
-    Если совпало — подпись верна.
-    """
+def rsa_verify(message: int, signature: int, public_key: tuple[int, int]) -> tuple[bool, int]:
     e, n = public_key
     recovered = pow(signature, e, n)
-    return recovered == message
+    return recovered == message, recovered
 
 
 if __name__ == "__main__":
-    public, private = generate_rsa_keys(bits=16)
+    print("=== ЭЦП на основе RSA ===")
+    p = int(input("Введите простое число p: "))
+    q = int(input("Введите простое число q: "))
+    document_hash = int(input("Введите хеш документа (число): "))
 
-    # В учебном примере «хеш» — просто число
-    document_hash = 12345
+    print("\n--- Генерация ключей ---")
+    public, private, info = generate_rsa_keys_from_primes(p, q)
+    print(f"n = {info['n']}, e = {info['e']}, d = {info['d']}")
 
+    if document_hash >= info['n']:
+        print(f"\nОшибка: хеш h = {document_hash} должен быть меньше n = {info['n']}")
+        raise SystemExit(1)
+
+    print("\n--- Создание подписи ---")
+    print(f"Формула: s = h^d mod n = {document_hash}^{info['d']} mod {info['n']}")
     signature = rsa_sign(document_hash, private)
-    is_valid = rsa_verify(document_hash, signature, public)
-    is_tampered = rsa_verify(document_hash + 1, signature, public)
+    print(f"Подпись s = {signature}")
 
-    print("Хеш документа:", document_hash)
-    print("Подпись:", signature)
-    print("Подпись верна:", is_valid)
-    print("Подпись при изменении хеша:", is_tampered)
+    print("\n--- Проверка подписи (оригинальный хеш) ---")
+    print(f"Формула: h' = s^e mod n = {signature}^{info['e']} mod {info['n']}")
+    valid, recovered = rsa_verify(document_hash, signature, public)
+    print(f"Восстановленный хеш h' = {recovered}")
+    print(f"h' == h ({recovered} == {document_hash}): {valid}")
+
+    tampered = int(input("\nВведите изменённый хеш для проверки подделки: "))
+    print(f"\n--- Проверка подписи (изменённый хеш {tampered}) ---")
+    print(f"Формула: h' = s^e mod n = {signature}^{info['e']} mod {info['n']}")
+    tampered_valid, tampered_recovered = rsa_verify(tampered, signature, public)
+    print(f"Восстановленный хеш h' = {tampered_recovered}")
+    print(f"h' == {tampered}: {tampered_valid}")

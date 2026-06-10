@@ -1,60 +1,58 @@
 """
 Задание 8. Метод Полларда (p-1) для поиска нетривиального делителя
 составного числа n.
-Идея: если p-1 делит B! для некоторого B, то a^(B!) ≡ 1 (mod p),
-и gcd(a^(B!) - 1, n) может дать делитель p.
 """
 
 import math
 import random
 
 
-def pollard_p_minus_1(n: int, bound: int = 20) -> int | None:
-    """
-    Ищет нетривиальный делитель числа n методом p-1.
-    bound — верхняя граница B (чем больше, тем выше шанс найти делитель).
-    """
+def pollard_p_minus_1_verbose(n: int, bound: int = 20) -> int | None:
+    """Метод p-1 с пошаговым выводом."""
+    print(f"\n--- Попытка: bound B = {bound} ---")
+
     if n % 2 == 0:
+        print(f"{n} чётное -> делитель 2")
         return 2
 
     a = random.randrange(2, n - 1)
-    # Вычисляем a^(B!) mod n через последовательное возведение в степень
+    print(f"Случайное основание a = {a}")
+    print(f"Вычисляем a^(B!) mod {n}:")
+
     for j in range(2, bound + 1):
+        prev_a = a
         a = pow(a, j, n)
+        print(f"  шаг j={j}: a = a^{j} mod {n} = {prev_a}^{j} mod {n} = {a}")
 
     g = math.gcd(a - 1, n)
+    print(f"\ngcd(a - 1, n) = gcd({a} - 1, {n}) = gcd({a - 1}, {n}) = {g}")
 
     if 1 < g < n:
+        print(f"Найден нетривиальный делитель: {g}")
         return g
 
-    return None
-
-
-def factor_with_retries(n: int, max_bound: int = 50, attempts: int = 10) -> int | None:
-    """
-    Несколько попыток с разными параметрами и основаниями a.
-    """
-    for bound in range(10, max_bound + 1, 5):
-        for _ in range(attempts):
-            factor = pollard_p_minus_1(n, bound)
-            if factor is not None:
-                return factor
+    print("Делитель не найден при данном bound")
     return None
 
 
 if __name__ == "__main__":
-    # Примеры: числа вида p*q, где p-1 гладкое (много малых множителей)
-    composite_numbers = [
-        15,           # 3 * 5
-        91,           # 7 * 13
-        10403,        # 101 * 103
-        3599,         # 59 * 61
-    ]
+    print("=== Метод Полларда (p-1) ===")
+    n = int(input("Введите составное число n: "))
+    bound = int(input("Введите верхнюю границу B (например, 20): "))
 
-    for n in composite_numbers:
-        factor = factor_with_retries(n)
-        if factor:
-            other = n // factor
-            print(f"n = {n}: найден делитель {factor}, другой делитель {other}")
-        else:
-            print(f"n = {n}: делитель не найден (попробуйте увеличить bound)")
+    print(f"\nИщем делитель числа n = {n}")
+    factor = pollard_p_minus_1_verbose(n, bound)
+
+    if factor:
+        other = n // factor
+        print(f"\n--- Результат ---")
+        print(f"{n} = {factor} * {other}")
+        print(f"Проверка: {factor} * {other} = {factor * other}")
+    else:
+        retry = input("\nПовторить с большим B? (y/n): ").strip().lower()
+        if retry == "y":
+            new_bound = int(input("Введите новый B: "))
+            factor = pollard_p_minus_1_verbose(n, new_bound)
+            if factor:
+                other = n // factor
+                print(f"\n{n} = {factor} * {other}")
